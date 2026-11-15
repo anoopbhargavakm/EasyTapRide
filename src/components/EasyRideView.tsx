@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Car,
   Check,
@@ -97,6 +97,7 @@ export const EasyRideView: React.FC<EasyRideViewProps> = ({
   const [sosCoords, setSosCoords] = useState<Coordinates | null>(coords);
   const [lastSosPreparedAt, setLastSosPreparedAt] = useState<string | null>(null);
   const [copiedSosMessage, setCopiedSosMessage] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const hasSosContact = Boolean(sosContact.name.trim() && sosContact.phone.trim());
   const totalPages = Math.max(1, Math.ceil(places.length / PLACES_PER_PAGE));
@@ -121,6 +122,9 @@ export const EasyRideView: React.FC<EasyRideViewProps> = ({
 
   useEffect(() => {
     return () => {
+      if (copyTimerRef.current !== null) {
+        clearTimeout(copyTimerRef.current);
+      }
       try {
         recognitionRef.current?.stop();
       } catch {
@@ -261,18 +265,27 @@ export const EasyRideView: React.FC<EasyRideViewProps> = ({
     try {
       await navigator.clipboard.writeText(text);
       setCopiedSosMessage(true);
-      setTimeout(() => setCopiedSosMessage(false), 2000);
+      if (copyTimerRef.current !== null) {
+        clearTimeout(copyTimerRef.current);
+      }
+      copyTimerRef.current = setTimeout(() => setCopiedSosMessage(false), 2000);
     } catch {
       setCopiedSosMessage(false);
     }
   };
 
   const activeSosCoords = sosCoords ?? coords;
-  const sosLinks = buildSosLinks(sosContact, activeSosCoords);
-  const { offers, distanceKm } =
-    selectedPlace && selectedVehicle
-      ? buildRideOffers(selectedPlace, selectedVehicle, coords)
-      : { offers: [], distanceKm: null };
+  const sosLinks = useMemo(
+    () => buildSosLinks(sosContact, activeSosCoords),
+    [sosContact, activeSosCoords]
+  );
+  const { offers, distanceKm } = useMemo(
+    () =>
+      selectedPlace && selectedVehicle
+        ? buildRideOffers(selectedPlace, selectedVehicle, coords)
+        : { offers: [], distanceKm: null },
+    [selectedPlace, selectedVehicle, coords]
+  );
 
   return (
     <div className="flex-1 min-h-0 flex flex-col gap-2.5 overflow-hidden">

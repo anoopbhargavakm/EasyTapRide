@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Check,
   ChevronLeft,
@@ -75,6 +75,15 @@ export const SavedPlacesView: React.FC<SavedPlacesViewProps> = ({
   const [sosSaving, setSosSaving] = useState(false);
   const [sosSavedMsg, setSosSavedMsg] = useState('');
   const [sosError, setSosError] = useState('');
+  const placeSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sosSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (placeSavedTimerRef.current !== null) clearTimeout(placeSavedTimerRef.current);
+      if (sosSavedTimerRef.current !== null) clearTimeout(sosSavedTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     setSosName(sosContact.name);
@@ -165,7 +174,8 @@ export const SavedPlacesView: React.FC<SavedPlacesViewProps> = ({
         setSavedMsg(`Saved "${placeLabel}" to ${ownerName}.`);
       }
       resetPlaceForm();
-      setTimeout(() => setSavedMsg(''), 3500);
+      if (placeSavedTimerRef.current !== null) clearTimeout(placeSavedTimerRef.current);
+      placeSavedTimerRef.current = setTimeout(() => setSavedMsg(''), 3500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to save destination.');
     } finally {
@@ -197,7 +207,8 @@ export const SavedPlacesView: React.FC<SavedPlacesViewProps> = ({
         phone: sosPhone.trim(),
       });
       setSosSavedMsg('Emergency contact saved.');
-      setTimeout(() => setSosSavedMsg(''), 3500);
+      if (sosSavedTimerRef.current !== null) clearTimeout(sosSavedTimerRef.current);
+      sosSavedTimerRef.current = setTimeout(() => setSosSavedMsg(''), 3500);
     } catch (err) {
       setSosError(err instanceof Error ? err.message : 'Could not update emergency contact.');
     } finally {

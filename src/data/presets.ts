@@ -277,17 +277,51 @@ export function buildRideOffers(
 function editDistance(a: string, b: string): number {
   const m = a.length;
   const n = b.length;
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
-  for (let i = 0; i <= m; i++) dp[i][0] = i;
-  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  let curr = new Array<number>(n + 1);
   for (let i = 1; i <= m; i++) {
+    curr[0] = i;
     for (let j = 1; j <= n; j++) {
       const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
     }
+    const tmp = prev;
+    prev = curr;
+    curr = tmp;
   }
-  return dp[m][n];
+  return prev[n];
 }
+
+const VOICE_STOP_WORDS = new Set([
+  'book',
+  'ride',
+  'auto',
+  'rickshaw',
+  'cab',
+  'car',
+  'taxi',
+  'to',
+  'for',
+  'me',
+  'a',
+  'an',
+  'the',
+  'please',
+  'go',
+  'take',
+  'open',
+  'in',
+  'on',
+  'via',
+  'with',
+  'uber',
+  'ola',
+  'rapido',
+  'namma',
+  'yatri',
+]);
 
 export interface ParsedVoiceCommand {
   vehicle: VehicleType;
@@ -323,39 +357,10 @@ export function parseVoiceRideCommand(
     }
   }
 
-  // Fuzzy match against spoken words after removing command filler words
-  const stopWords = new Set([
-    'book',
-    'ride',
-    'auto',
-    'rickshaw',
-    'cab',
-    'car',
-    'taxi',
-    'to',
-    'for',
-    'me',
-    'a',
-    'an',
-    'the',
-    'please',
-    'go',
-    'take',
-    'open',
-    'in',
-    'on',
-    'via',
-    'with',
-    'uber',
-    'ola',
-    'rapido',
-    'namma',
-    'yatri',
-  ]);
   const spokenTokens = lower
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
-    .filter((w) => w.length >= 2 && !stopWords.has(w));
+    .filter((w) => w.length >= 2 && !VOICE_STOP_WORDS.has(w));
 
   let bestPlace: SavedPlace | null = null;
   let bestScore = Infinity;

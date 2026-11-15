@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Check, Copy, Download, ExternalLink, Smartphone, X } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
@@ -6,6 +6,13 @@ export const PWAInstallButton: React.FC = () => {
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
   const [showGuide, setShowGuide] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current !== null) clearTimeout(copyTimerRef.current);
+    };
+  }, []);
 
   if (isInstalled) {
     return null;
@@ -27,7 +34,8 @@ export const PWAInstallButton: React.FC = () => {
     try {
       await navigator.clipboard.writeText(appUrl);
       setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2000);
+      if (copyTimerRef.current !== null) clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = setTimeout(() => setCopiedLink(false), 2000);
     } catch {
       setCopiedLink(false);
     }

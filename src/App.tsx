@@ -1,11 +1,16 @@
-import { useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { Compass, LogOut, MapPinned, Users, WifiOff } from 'lucide-react';
 import { EasyRideView } from './components/EasyRideView';
-import { FamilyAssistView } from './components/FamilyAssistView';
 import { GoogleSignInGate } from './components/GoogleSignInGate';
 import { PWAInstallButton } from './components/PWAInstallButton';
-import { SavedPlacesView } from './components/SavedPlacesView';
 import { useOnlineStatus } from './hooks/usePWAInstall';
+
+const SavedPlacesView = lazy(() =>
+  import('./components/SavedPlacesView').then((m) => ({ default: m.SavedPlacesView }))
+);
+const FamilyAssistView = lazy(() =>
+  import('./components/FamilyAssistView').then((m) => ({ default: m.FamilyAssistView }))
+);
 import { googleSignIn, initAuth, logout, type User } from './lib/firebaseAuth';
 import {
   addAssistMember,
@@ -93,16 +98,28 @@ export default function App() {
       watchId = navigator.geolocation.watchPosition(
         (pos) => {
           setCoords((prev) => {
+            const nextLat = pos.coords.latitude;
+            const nextLng = pos.coords.longitude;
             const nextAcc = pos.coords.accuracy;
-            if (!prev || !prev.accuracy || nextAcc <= prev.accuracy * 1.25) {
-              return {
-                lat: pos.coords.latitude,
-                lng: pos.coords.longitude,
-                accuracy: nextAcc,
-                calibrated: nextAcc <= 30,
-              };
+            if (prev) {
+              const movedEnough =
+                Math.abs(nextLat - prev.lat) > 0.00008 ||
+                Math.abs(nextLng - prev.lng) > 0.00008;
+              const prevAcc = prev.accuracy ?? 999;
+              const improvedEnough = nextAcc < prevAcc * 0.85;
+              if (!movedEnough && !improvedEnough) {
+                return prev;
+              }
+              if (nextAcc > prevAcc * 1.25) {
+                return prev;
+              }
             }
-            return prev;
+            return {
+              lat: nextLat,
+              lng: nextLng,
+              accuracy: nextAcc,
+              calibrated: nextAcc <= 30,
+            };
           });
         },
         () => {
@@ -242,81 +259,102 @@ export default function App() {
     setActiveTab('ride');
   };
 
-  const activeProfile: ElderProfile = {
-    ...activeProfileMeta,
-    places,
-    assists,
-  };
+  const activeProfile: ElderProfile = useMemo(
+    () => ({
+      ...activeProfileMeta,
+      places,
+      assists,
+    }),
+    [activeProfileMeta, places, assists]
+  );
 
   const ownProfileId = authUser?.uid || '';
   const isAssistingOther = Boolean(
     ownProfileId && activeProfileId && activeProfileId !== ownProfileId
   );
 
-  const runFirestoreAction = async (fn: () => Promise<void>) => {
+  const runFirestoreAction = useCallback(async (fn: () => Promise<void>) => {
     try {
       await fn();
     } catch (err) {
       throw new Error(formatFirestoreUserMessage(err));
     }
-  };
+  }, []);
 
-  const handleCreatePlace = async (payload: {
-    name: string;
-    shortcode?: string;
-    lat?: number;
-    lng?: number;
-    addedBy?: string;
-  }) => {
-    if (!activeProfile.id) return;
-    await runFirestoreAction(() =>
-      createPlace(activeProfile, {
-        ...payload,
-        addedBy:
-          payload.addedBy ||
-          (isAssistingOther
-            ? authUser?.displayName || authUser?.email || 'Caregiver'
-            : ''),
-      })
-    );
-  };
-
-  const handleUpdatePlace = async (
-    placeId: string,
-    payload: {
+  const handleCreatePlace = useCallback(
+    async (payload: {
       name: string;
       shortcode?: string;
       lat?: number;
       lng?: number;
-    }
-  ) => {
-    if (!activeProfile.id) return;
-    await runFirestoreAction(() => updatePlace(activeProfile.id, placeId, payload));
-  };
+      addedBy?: string;
+    }) => {
+      if (!activeProfile.id) return;
+      await runFirestoreAction(() =>
+        createPlace(activeProfile, {
+          ...payload,
+          addedBy:
+            payload.addedBy ||
+            (isAssistingOther
+              ? authUser?.displayName || authUser?.email || 'Caregiver'
+              : ''),
+        })
+      );
+    },
+    [activeProfile, authUser, isAssistingOther, runFirestoreAction]
+  );
 
-  const handleDeletePlace = async (placeId: string) => {
-    if (!activeProfile.id) return;
-    await runFirestoreAction(() => deletePlace(activeProfile.id, placeId));
-  };
+  const handleUpdatePlace = useCallback(
+    async (
+      placeId: string,
+      payload: {
+        name: string;
+        shortcode?: string;
+        lat?: number;
+        lng?: number;
+      }
+    ) => {
+      if (!activeProfile.id) return;
+      await runFirestoreAction(() => updatePlace(activeProfile.id, placeId, payload));
+    },
+    [activeProfile.id, runFirestoreAction]
+  );
 
-  const handleUpdateSosContact = async (contact: EmergencyContact) => {
-    if (!activeProfile.id) return;
-    await runFirestoreAction(() => updateSosContact(activeProfile.id, contact));
-  };
+  const handleDeletePlace = useCallback(
+    async (placeId: string) => {
+      if (!activeProfile.id) return;
+      await runFirestoreAction(() => deletePlace(activeProfile.id, placeId));
+    },
+    [activeProfile.id, runFirestoreAction]
+  );
 
-  const handleAddAssist = async (payload: {
-    name: string;
-    email: string;
-    relationship: string;
-  }) => {
-    if (!activeProfile.id) return;
-    await runFirestoreAction(() => addAssistMember(activeProfile, payload));
-  };
+  const handleUpdateSosContact = useCallback(
+    async (contact: EmergencyContact) => {
+      if (!activeProfile.id) return;
+      await runFirestoreAction(() => updateSosContact(activeProfile.id, contact));
+    },
+    [activeProfile.id, runFirestoreAction]
+  );
 
-  const handleRemoveAssist = async (assist: AssistMember) => {
-    if (!activeProfile.id) return;
-    await runFirestoreAction(() => removeAssistMember(activeProfile, assist));
-  };
+  const handleAddAssist = useCallback(
+    async (payload: {
+      name: string;
+      email: string;
+      relationship: string;
+    }) => {
+      if (!activeProfile.id) return;
+      await runFirestoreAction(() => addAssistMember(activeProfile, payload));
+    },
+    [activeProfile, runFirestoreAction]
+  );
+
+  const handleRemoveAssist = useCallback(
+    async (assist: AssistMember) => {
+      if (!activeProfile.id) return;
+      await runFirestoreAction(() => removeAssistMember(activeProfile, assist));
+    },
+    [activeProfile, runFirestoreAction]
+  );
 
   const needsAuth = authReady && !authUser;
 
@@ -475,41 +513,51 @@ export default function App() {
                 />
               )}
 
-              {activeTab === 'places' && (
-                <SavedPlacesView
-                  ownerName={activeProfile.ownerName}
-                  assistName={
-                    isAssistingOther
-                      ? authUser?.displayName || authUser?.email || 'Caregiver'
-                      : undefined
+              {(activeTab === 'places' || activeTab === 'assist') && (
+                <Suspense
+                  fallback={
+                    <div className="bg-white border border-[#DCD8CE] rounded-2xl p-6 text-base text-[#4A524D]">
+                      Loading...
+                    </div>
                   }
-                  initialTab={placesInitialTab}
-                  places={activeProfile.places}
-                  sosContact={activeProfile.sosContact}
-                  onRefreshLocation={refreshLocation}
-                  onCreatePlace={handleCreatePlace}
-                  onUpdatePlace={handleUpdatePlace}
-                  onDeletePlace={handleDeletePlace}
-                  onUpdateSosContact={handleUpdateSosContact}
-                />
-              )}
+                >
+                  {activeTab === 'places' && (
+                    <SavedPlacesView
+                      ownerName={activeProfile.ownerName}
+                      assistName={
+                        isAssistingOther
+                          ? authUser?.displayName || authUser?.email || 'Caregiver'
+                          : undefined
+                      }
+                      initialTab={placesInitialTab}
+                      places={activeProfile.places}
+                      sosContact={activeProfile.sosContact}
+                      onRefreshLocation={refreshLocation}
+                      onCreatePlace={handleCreatePlace}
+                      onUpdatePlace={handleUpdatePlace}
+                      onDeletePlace={handleDeletePlace}
+                      onUpdateSosContact={handleUpdateSosContact}
+                    />
+                  )}
 
-              {activeTab === 'assist' && (
-                <FamilyAssistView
-                  ownProfileId={ownProfileId}
-                  ownOwnerName={ownOwnerName}
-                  activeProfileId={activeProfile.id}
-                  activeOwnerName={activeProfile.ownerName}
-                  assists={activeProfile.assists}
-                  elderAccounts={elderAccounts}
-                  onSelectAccount={(id) => setActiveProfileId(id)}
-                  onAddAssist={handleAddAssist}
-                  onRemoveAssist={handleRemoveAssist}
-                  onGoToAddPlaces={() => {
-                    setPlacesInitialTab('place');
-                    setActiveTab('places');
-                  }}
-                />
+                  {activeTab === 'assist' && (
+                    <FamilyAssistView
+                      ownProfileId={ownProfileId}
+                      ownOwnerName={ownOwnerName}
+                      activeProfileId={activeProfile.id}
+                      activeOwnerName={activeProfile.ownerName}
+                      assists={activeProfile.assists}
+                      elderAccounts={elderAccounts}
+                      onSelectAccount={(id) => setActiveProfileId(id)}
+                      onAddAssist={handleAddAssist}
+                      onRemoveAssist={handleRemoveAssist}
+                      onGoToAddPlaces={() => {
+                        setPlacesInitialTab('place');
+                        setActiveTab('places');
+                      }}
+                    />
+                  )}
+                </Suspense>
               )}
             </>
           )}

@@ -83,9 +83,44 @@ export default defineConfig(() => {
         },
       }),
     ],
+    build: {
+      rolldownOptions: {
+        output: {
+          codeSplitting: {
+            groups: [
+              {
+                name: 'vendor-react',
+                test: /node_modules\/(react|react-dom|scheduler)/,
+                priority: 30,
+              },
+              {
+                name: 'vendor-firebase-auth',
+                test: /node_modules\/@firebase\/auth/,
+                priority: 25,
+              },
+              {
+                name: 'vendor-firebase-firestore',
+                test: /node_modules\/@firebase\/firestore/,
+                priority: 25,
+              },
+              {
+                name: 'vendor-firebase-core',
+                test: /node_modules\/(@firebase|firebase)/,
+                priority: 20,
+              },
+              {
+                name: 'vendor-icons',
+                test: /node_modules\/lucide-react/,
+                priority: 15,
+              },
+            ],
+          },
+        },
+      },
+    },
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': path.resolve(import.meta.dirname, '.'),
       },
     },
     server: {
