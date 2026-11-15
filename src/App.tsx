@@ -28,6 +28,12 @@ import {
   updateSosContact,
 } from './lib/firestoreStore';
 import { calibratePreciseLocation } from './lib/preciseLocation';
+import {
+  getPlaceUsageMap,
+  recordPlaceUsage,
+  sortPlacesByUsage,
+  type PlaceUsageMap,
+} from './lib/placeUsage';
 import type {
   AssistMember,
   Coordinates,
@@ -71,6 +77,7 @@ export default function App() {
     sosContact: { name: '', relationship: '', phone: '' },
   });
   const [places, setPlaces] = useState<SavedPlace[]>([]);
+  const [placeUsageMap, setPlaceUsageMap] = useState<PlaceUsageMap>({});
   const [assists, setAssists] = useState<AssistMember[]>([]);
   const [elderAccounts, setElderAccounts] = useState<SharedElderAccount[]>([]);
   const [loadingProfile, setLoadingProfile] = useState(false);
@@ -184,6 +191,11 @@ export default function App() {
     return () => unsubShared();
   }, [authReady, authUser]);
 
+  // Load per-profile place usage map whenever activeProfileId changes
+  useEffect(() => {
+    setPlaceUsageMap(activeProfileId ? getPlaceUsageMap(activeProfileId) : {});
+  }, [activeProfileId]);
+
   // Real-time subscriptions for the currently selected profile, places, and assists
   useEffect(() => {
     if (!authReady || !authUser || !activeProfileId) return;
@@ -259,13 +271,26 @@ export default function App() {
     setActiveTab('ride');
   };
 
+  const sortedPlaces = useMemo(
+    () => sortPlacesByUsage(places, placeUsageMap),
+    [places, placeUsageMap]
+  );
+
   const activeProfile: ElderProfile = useMemo(
     () => ({
       ...activeProfileMeta,
-      places,
+      places: sortedPlaces,
       assists,
     }),
-    [activeProfileMeta, places, assists]
+    [activeProfileMeta, sortedPlaces, assists]
+  );
+
+  const handleRecordPlaceUsage = useCallback(
+    (placeId: string) => {
+      if (!activeProfileId) return;
+      setPlaceUsageMap(recordPlaceUsage(activeProfileId, placeId));
+    },
+    [activeProfileId]
   );
 
   const ownProfileId = authUser?.uid || '';
@@ -510,6 +535,7 @@ export default function App() {
                     setPlacesInitialTab('sos');
                     setActiveTab('places');
                   }}
+                  onRecordPlaceUsage={handleRecordPlaceUsage}
                 />
               )}
 

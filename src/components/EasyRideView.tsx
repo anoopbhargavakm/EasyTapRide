@@ -37,6 +37,7 @@ interface EasyRideViewProps {
   sosContact: EmergencyContact;
   onAddPlaceClick: () => void;
   onSetupSosClick: () => void;
+  onRecordPlaceUsage?: (placeId: string) => void;
 }
 
 interface SpeechRecognitionAlternativeLike {
@@ -78,6 +79,7 @@ export const EasyRideView: React.FC<EasyRideViewProps> = ({
   sosContact,
   onAddPlaceClick,
   onSetupSosClick,
+  onRecordPlaceUsage,
 }) => {
   const [selectedPlace, setSelectedPlace] = useState<SavedPlace | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleType | null>(null);
@@ -98,6 +100,7 @@ export const EasyRideView: React.FC<EasyRideViewProps> = ({
   const [lastSosPreparedAt, setLastSosPreparedAt] = useState<string | null>(null);
   const [copiedSosMessage, setCopiedSosMessage] = useState(false);
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const countedPlaceSessionRef = useRef<string | null>(null);
 
   const hasSosContact = Boolean(sosContact.name.trim() && sosContact.phone.trim());
   const totalPages = Math.max(1, Math.ceil(places.length / PLACES_PER_PAGE));
@@ -139,9 +142,16 @@ export const EasyRideView: React.FC<EasyRideViewProps> = ({
     setGpsRefreshing(false);
   };
 
+  const markPlaceUsedOnce = (placeId: string) => {
+    if (countedPlaceSessionRef.current === placeId) return;
+    countedPlaceSessionRef.current = placeId;
+    onRecordPlaceUsage?.(placeId);
+  };
+
   const handleSelectPlace = (place: SavedPlace) => {
     setVoiceLaunchOffer(null);
     setVoiceFeedback('');
+    countedPlaceSessionRef.current = null;
     if (selectedPlace?.id === place.id) {
       setSelectedPlace(null);
       setSelectedVehicle(null);
@@ -154,6 +164,9 @@ export const EasyRideView: React.FC<EasyRideViewProps> = ({
   const handleSelectVehicle = (vehicle: VehicleType) => {
     setSelectedVehicle(vehicle);
     setVoiceLaunchOffer(null);
+    if (selectedPlace) {
+      markPlaceUsedOnce(selectedPlace.id);
+    }
   };
 
   const handleVoiceClick = () => {
@@ -210,6 +223,7 @@ export const EasyRideView: React.FC<EasyRideViewProps> = ({
 
         setSelectedPlace(parsed.place);
         setSelectedVehicle(parsed.vehicle);
+        markPlaceUsedOnce(parsed.place.id);
 
         const { offers: matchedOffers } = buildRideOffers(
           parsed.place,
@@ -512,6 +526,7 @@ export const EasyRideView: React.FC<EasyRideViewProps> = ({
                 <button
                   type="button"
                   onClick={() => {
+                    countedPlaceSessionRef.current = null;
                     setSelectedPlace(null);
                     setSelectedVehicle(null);
                     setVoiceLaunchOffer(null);
@@ -608,6 +623,9 @@ export const EasyRideView: React.FC<EasyRideViewProps> = ({
                           href={offer.url}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={() => {
+                            if (selectedPlace) markPlaceUsedOnce(selectedPlace.id);
+                          }}
                           className={`w-full min-h-[44px] px-3 rounded-xl ${offer.accentBg} ${offer.accentText} text-sm font-semibold inline-flex items-center justify-center gap-1.5 whitespace-nowrap`}
                         >
                           <span>Book Here</span>
