@@ -1,0 +1,236 @@
+{
+  "entities": {
+    "ElderProfile": {
+      "title": "ElderProfile",
+      "description": "An elder user's EasyTap Ride profile, emergency contact, and authorized caregiver Gmail list.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Firebase Auth UID of the profile owner."
+        },
+        "ownerName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Display name shown on the elder's profile."
+        },
+        "ownerEmail": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 200,
+          "description": "Lowercase Gmail address of the profile owner."
+        },
+        "sosName": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 100,
+          "description": "Name of the designated Emergency (SOS) contact."
+        },
+        "sosRelationship": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 80,
+          "description": "Relationship of the SOS contact."
+        },
+        "sosPhone": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 30,
+          "description": "Phone number of the SOS contact."
+        },
+        "assistEmails": {
+          "type": "array",
+          "description": "Bounded list (max 10) of lowercase Gmail addresses authorized to assist this profile."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the profile was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the profile was last updated."
+        }
+      },
+      "required": [
+        "ownerId",
+        "ownerName",
+        "ownerEmail",
+        "sosName",
+        "sosRelationship",
+        "sosPhone",
+        "assistEmails",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SavedPlace": {
+      "title": "SavedPlace",
+      "description": "A one-tap saved destination card belonging to an elder profile.",
+      "type": "object",
+      "properties": {
+        "profileId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Parent ElderProfile document ID."
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Firebase Auth UID of the parent profile owner."
+        },
+        "assistEmails": {
+          "type": "array",
+          "description": "Synced copy (max 10) of parent profile's authorized caregiver emails."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Short display label on the destination card."
+        },
+        "shortcode": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 16,
+          "description": "Optional Plus Code or location shortcode."
+        },
+        "lat": {
+          "type": "number",
+          "description": "Optional calibrated latitude coordinate."
+        },
+        "lng": {
+          "type": "number",
+          "description": "Optional calibrated longitude coordinate."
+        },
+        "addedBy": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 100,
+          "description": "Name or email of caregiver if added on behalf of elder."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the place was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the place was last updated."
+        }
+      },
+      "required": [
+        "profileId",
+        "ownerId",
+        "assistEmails",
+        "name",
+        "shortcode",
+        "addedBy",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AssistMember": {
+      "title": "AssistMember",
+      "description": "A family caregiver authorized by Gmail to manage an elder profile.",
+      "type": "object",
+      "properties": {
+        "profileId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Parent ElderProfile document ID."
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Firebase Auth UID of the parent profile owner."
+        },
+        "assistEmails": {
+          "type": "array",
+          "description": "Synced copy (max 10) of parent profile's authorized caregiver emails."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Caregiver's display name."
+        },
+        "email": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 200,
+          "description": "Caregiver's lowercase Gmail address."
+        },
+        "relationship": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Caregiver's relationship to the elder."
+        },
+        "phone": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 30,
+          "description": "Caregiver's phone number."
+        },
+        "isSos": {
+          "type": "boolean",
+          "description": "Whether this caregiver is marked as the active SOS contact."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the caregiver was added."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the caregiver entry was last updated."
+        }
+      },
+      "required": [
+        "profileId",
+        "ownerId",
+        "assistEmails",
+        "name",
+        "email",
+        "relationship",
+        "phone",
+        "isSos",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/profiles/{profileId}": {
+      "schema": {
+        "$ref": "#/entities/ElderProfile"
+      },
+      "description": "Elder profile root documents, keyed by owner UID."
+    },
+    "/profiles/{profileId}/places/{placeId}": {
+      "schema": {
+        "$ref": "#/entities/SavedPlace"
+      },
+      "description": "Saved one-tap destination cards for an elder profile."
+    },
+    "/profiles/{profileId}/assists/{assistId}": {
+      "schema": {
+        "$ref": "#/entities/AssistMember"
+      },
+      "description": "Authorized family caregivers linked to an elder profile."
+    }
+  }
+}

@@ -1,0 +1,265 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true && request.auth.token.email is string;
+    }
+
+    function authEmailLower() {
+      return request.auth.token.email.lower();
+    }
+
+    function isValidEmailList(emails) {
+      return emails is list &&
+        emails.size() <= 10 &&
+        (emails.size() == 0 || (emails[0] is string && emails[0].size() >= 3 && emails[0].size() <= 200));
+    }
+
+    function isProfileMemberData(data) {
+      return data.ownerId == request.auth.uid ||
+        (isVerified() && (
+          request.auth.token.email in data.assistEmails ||
+          authEmailLower() in data.assistEmails
+        ));
+    }
+
+    function parentProfile(profileId) {
+      return get(/databases/$(database)/documents/profiles/$(profileId)).data;
+    }
+
+    function parentProfileExists(profileId) {
+      return exists(/databases/$(database)/documents/profiles/$(profileId));
+    }
+
+    function parentProfileAfter(profileId) {
+      return getAfter(/databases/$(database)/documents/profiles/$(profileId)).data;
+    }
+
+    function isParentOwner(profileId) {
+      return parentProfileExists(profileId) && parentProfile(profileId).ownerId == request.auth.uid;
+    }
+
+    function isParentMember(profileId) {
+      return parentProfileExists(profileId) && isProfileMemberData(parentProfile(profileId));
+    }
+
+    function isValidProfile(data) {
+      return data.keys().hasAll([
+          'ownerId', 'ownerName', 'ownerEmail',
+          'sosName', 'sosRelationship', 'sosPhone',
+          'assistEmails', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ownerId', 'ownerName', 'ownerEmail',
+          'sosName', 'sosRelationship', 'sosPhone',
+          'assistEmails', 'createdAt', 'updatedAt'
+        ]) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+        data.ownerName is string && data.ownerName.size() >= 1 && data.ownerName.size() <= 100 &&
+        data.ownerEmail is string && data.ownerEmail.size() >= 3 && data.ownerEmail.size() <= 200 &&
+        data.sosName is string && data.sosName.size() <= 100 &&
+        data.sosRelationship is string && data.sosRelationship.size() <= 80 &&
+        data.sosPhone is string && data.sosPhone.size() <= 30 &&
+        isValidEmailList(data.assistEmails) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidPlace(data, profileId) {
+      return data.keys().hasAll([
+          'profileId', 'ownerId', 'assistEmails',
+          'name', 'shortcode', 'addedBy',
+          'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'profileId', 'ownerId', 'assistEmails',
+          'name', 'shortcode', 'lat', 'lng', 'addedBy',
+          'createdAt', 'updatedAt'
+        ]) &&
+        data.profileId is string && data.profileId == profileId &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+        isValidEmailList(data.assistEmails) &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+        data.shortcode is string && data.shortcode.size() <= 16 &&
+        (!('lat' in data) || (data.lat is number && data.lat >= -90 && data.lat <= 90)) &&
+        (!('lng' in data) || (data.lng is number && data.lng >= -180 && data.lng <= 180)) &&
+        data.addedBy is string && data.addedBy.size() <= 100 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidAssist(data, profileId) {
+      return data.keys().hasAll([
+          'profileId', 'ownerId', 'assistEmails',
+          'name', 'email', 'relationship', 'phone', 'isSos',
+          'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'profileId', 'ownerId', 'assistEmails',
+          'name', 'email', 'relationship', 'phone', 'isSos',
+          'createdAt', 'updatedAt'
+        ]) &&
+        data.profileId is string && data.profileId == profileId &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+        isValidEmailList(data.assistEmails) &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 200 &&
+        data.relationship is string && data.relationship.size() >= 1 && data.relationship.size() <= 80 &&
+        data.phone is string && data.phone.size() <= 30 &&
+        data.isSos is bool &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    match /profiles/{profileId} {
+      allow get: if isSignedIn() && isValidId(profileId) && (
+        profileId == request.auth.uid ||
+        (resource != null && isProfileMemberData(existing()))
+      );
+
+      allow list: if isSignedIn() && isProfileMemberData(existing());
+
+      allow create: if isVerified() &&
+        isValidId(profileId) &&
+        profileId == request.auth.uid &&
+        isValidProfile(incoming()) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().ownerEmail == authEmailLower() &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerified() &&
+        isValidId(profileId) &&
+        isValidProfile(incoming()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().ownerEmail == existing().ownerEmail &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          // Tier 1: Profile owner can update name, SOS contact, and authorized caregiver emails
+          (
+            existing().ownerId == request.auth.uid &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'ownerName', 'sosName', 'sosRelationship', 'sosPhone', 'assistEmails', 'updatedAt'
+            ])
+          ) ||
+          // Tier 2: Authorized caregiver can only update SOS contact fields
+          (
+            isProfileMemberData(existing()) &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'sosName', 'sosRelationship', 'sosPhone', 'updatedAt'
+            ])
+          )
+        );
+
+      allow delete: if false;
+
+      match /places/{placeId} {
+        allow get: if isSignedIn() && isValidId(profileId) && isValidId(placeId) &&
+          isParentMember(profileId);
+
+        allow list: if isSignedIn() && isProfileMemberData(existing());
+
+        allow create: if isVerified() &&
+          isValidId(profileId) &&
+          isValidId(placeId) &&
+          isValidPlace(incoming(), profileId) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          isParentMember(profileId) &&
+          incoming().ownerId == parentProfile(profileId).ownerId &&
+          incoming().assistEmails == parentProfile(profileId).assistEmails;
+
+        allow update: if isVerified() &&
+          isValidId(profileId) &&
+          isValidId(placeId) &&
+          isValidPlace(incoming(), profileId) &&
+          incoming().profileId == existing().profileId &&
+          incoming().ownerId == existing().ownerId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time && (
+            // Action 1: Owner or caregiver edits place details
+            (
+              isParentMember(profileId) &&
+              incoming().diff(existing()).affectedKeys().hasOnly([
+                'name', 'shortcode', 'lat', 'lng', 'addedBy', 'updatedAt'
+              ])
+            ) ||
+            // Action 2: Owner atomically syncs assistEmails alongside parent profile update
+            (
+              isParentOwner(profileId) &&
+              incoming().assistEmails == parentProfileAfter(profileId).assistEmails &&
+              incoming().diff(existing()).affectedKeys().hasOnly(['assistEmails', 'updatedAt'])
+            )
+          );
+
+        allow delete: if isVerified() &&
+          isValidId(profileId) &&
+          isValidId(placeId) &&
+          isParentMember(profileId);
+      }
+
+      match /assists/{assistId} {
+        allow get: if isSignedIn() && isValidId(profileId) && isValidId(assistId) &&
+          isParentMember(profileId);
+
+        allow list: if isSignedIn() && isProfileMemberData(existing());
+
+        allow create: if isVerified() &&
+          isValidId(profileId) &&
+          isValidId(assistId) &&
+          isValidAssist(incoming(), profileId) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          isParentOwner(profileId) &&
+          incoming().ownerId == parentProfile(profileId).ownerId &&
+          incoming().assistEmails == parentProfileAfter(profileId).assistEmails;
+
+        allow update: if isVerified() &&
+          isValidId(profileId) &&
+          isValidId(assistId) &&
+          isValidAssist(incoming(), profileId) &&
+          incoming().profileId == existing().profileId &&
+          incoming().ownerId == existing().ownerId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          isParentOwner(profileId) && (
+            // Action 1: Owner marks/unmarks caregiver SOS or edits phone
+            (
+              incoming().diff(existing()).affectedKeys().hasOnly(['isSos', 'phone', 'updatedAt'])
+            ) ||
+            // Action 2: Owner atomically syncs assistEmails (and optionally resets isSos) alongside parent profile update
+            (
+              incoming().assistEmails == parentProfileAfter(profileId).assistEmails &&
+              incoming().diff(existing()).affectedKeys().hasOnly(['assistEmails', 'isSos', 'updatedAt'])
+            )
+          );
+
+        allow delete: if isVerified() &&
+          isValidId(profileId) &&
+          isValidId(assistId) &&
+          isParentOwner(profileId);
+      }
+    }
+  }
+}

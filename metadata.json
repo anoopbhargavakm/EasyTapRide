@@ -1,0 +1,6 @@
+{
+  "name": "SerenePath",
+  "description": "Elder-friendly minimal-click ride booking, custom guided meditation with AI visuals and voiceovers, and a helpful Gemini assistant.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
