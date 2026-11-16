@@ -1,12 +1,18 @@
 # EasyTap Ride
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-1B4D3E.svg)](./LICENSE)
+[![React 19](https://img.shields.io/badge/React-19-20232A.svg?logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Strict-3178C6.svg?logo=typescript)](https://www.typescriptlang.org/)
+[![Firebase Free Tier](https://img.shields.io/badge/Firebase-Spark%20Free%20Tier-FFCA28.svg?logo=firebase)](https://firebase.google.com/pricing)
+[![PWA Ready](https://img.shields.io/badge/PWA-Installable-1B4D3E.svg)](./vite.config.ts)
+
 A senior-friendly, minimal-tap ride booking Progressive Web App (PWA) with voice booking, one-tap Emergency SOS, and effortless Gmail-based family assistance—running **100% free** on Firebase Spark + Vercel.
 
 ---
 
 ## Why EasyTap Ride?
 
-Booking a ride shouldn't require typing addresses, navigating nested menus, or copying invite codes. EasyTap Ride turns frequent destinations (**Home**, **Hospital**, **Temple**, etc.) into large, high-contrast tap cards that launch ride apps with pickup and drop-off already filled in.
+Standard ride-hailing apps require typing addresses, pinning maps, and navigating tiny menus—which is frustrating for elderly riders. EasyTap Ride turns frequent destinations (**Home**, **Hospital**, **Temple**, etc.) into large, high-contrast tap cards that automatically move most-used places to the top and launch ride apps with pickup and drop-off already filled in.
 
 ---
 
@@ -14,6 +20,7 @@ Booking a ride shouldn't require typing addresses, navigating nested menus, or c
 
 - **One-Tap Ride Booking (`Easy Ride`)**
   - Tap a saved place → pick **Auto** or **Cab** → launch **Namma Yatri**, **Rapido**, **Uber**, or **Ola** with pickup GPS and drop-off location pre-filled.
+  - Automatically floats your **most frequently used places** to the top of the screen.
   - Built-in **Open Location Code (Plus Code)** decoder (`8-char` full and `4-char` local shortcodes) and street-adjusted fare estimates.
 - **Voice Booking**
   - Tap **Voice** and speak naturally (e.g., *"Book Auto to Hospital"* or *"Cab to Home via Uber"*) using browser Speech Recognition (`en-IN`) with fuzzy matching.
@@ -32,23 +39,26 @@ Booking a ride shouldn't require typing addresses, navigating nested menus, or c
 
 - **Frontend:** React 19, TypeScript, Vite, Tailwind CSS v4, Lucide Icons
 - **Auth & Real-Time Database:** Firebase Authentication (Google Sign-In) + Cloud Firestore (Spark free tier)
-- **PWA:** `vite-plugin-pwa` (Workbox precache + standalone manifest)
-- **Hosting:** Static SPA build (`dist/`) — works on **Vercel**, Netlify, Cloudflare Pages, or Node/Express (`server.ts`)
+- **PWA & SEO:** `vite-plugin-pwa`, Workbox, OpenGraph/Twitter social cards, Schema.org JSON-LD, `robots.txt`, `sitemap.xml`
+- **Hosting:** Static SPA build (`dist/`) — deploys free on **Vercel**, Netlify, Cloudflare Pages, or Node/Express (`server.ts`)
 
 ---
 
 ## Project Structure
 
 ```text
+├── .github/                      # Issue & Pull Request templates
+├── CONTRIBUTING.md               # Contributor guidelines & setup
+├── LICENSE                       # MIT open-source license
 ├── firebase-applet-config.json   # Client Firebase project configuration
 ├── firebase-blueprint.json       # Firestore data model specification
 ├── firestore.rules               # Hardened Firestore security rules
 ├── firestore.rules.test.ts       # Adversarial security rule test payloads
 ├── security_spec.md              # Access-control invariants & audit spec
 ├── vercel.json                   # Vercel SPA rewrite & SW cache headers
-├── public/                       # PWA icons (192x192, 512x512, maskable, Apple)
+├── public/                       # PWA icons, robots.txt, sitemap.xml
 └── src/
-    ├── App.tsx                   # Auth lifecycle, Firestore listeners, navigation
+    ├── App.tsx                   # Auth lifecycle, Firestore listeners, lazy tabs
     ├── types.ts                  # Shared TypeScript models
     ├── components/
     │   ├── EasyRideView.tsx      # Tap-to-book cards, voice & Emergency SOS modal
@@ -63,6 +73,7 @@ Booking a ride shouldn't require typing addresses, navigating nested menus, or c
     └── lib/
         ├── firebaseAuth.ts       # Firebase app, Firestore & Google Auth setup
         ├── firestoreStore.ts     # Real-time subscriptions & atomic batch writes
+        ├── placeUsage.ts         # Local most-used destination frequency sorting
         └── preciseLocation.ts    # Multi-sample GPS calibration utility
 ```
 
@@ -80,7 +91,7 @@ npm install
 
 ### 2. Connect Your Own Free Firebase Project
 
-If you are forking this repo for your own deployment, point it at your own Firebase project (Spark free tier):
+If you fork this repository, point it at your own free-tier Firebase project:
 
 1. Create a project at [console.firebase.google.com](https://console.firebase.google.com).
 2. Enable **Authentication → Sign-in method → Google**.
@@ -115,6 +126,26 @@ npm run build
 1. Push your repository to GitHub.
 2. Import the repository at [vercel.com/new](https://vercel.com/new) (no environment variables needed; `vercel.json` is already configured for Vite + SPA routing).
 3. Copy your deployed Vercel hostname (e.g. `your-app.vercel.app`) and add it under **Firebase Console → Authentication → Settings → Authorized domains** so Google Sign-In works on your live URL.
+
+---
+
+## Roadmap & Contributions Welcome
+
+Want to contribute? See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for guidelines. High-impact ideas:
+- Regional Indian & international language translations (Hindi, Kannada, Tamil, Telugu, Marathi, etc.)
+- Additional local transit & ride-hailing deep-link presets
+- Spoken voice confirmation readbacks (`speechSynthesis`) for visually impaired elders
+
+---
+
+## Citation & Zenodo Archiving
+
+This repository includes [`CITATION.cff`](./CITATION.cff) and [`.zenodo.json`](./.zenodo.json) for automated citation indexing and DOI minting via **Zenodo**.
+
+To mint your official DOI after pushing to GitHub:
+1. Sign in at [zenodo.org](https://zenodo.org) with your GitHub account.
+2. Go to **GitHub** settings in Zenodo and toggle **On** for this repository.
+3. On GitHub, create a release (e.g., tag `v1.0.0`) — Zenodo automatically archives the release and generates your citable DOI badge.
 
 ---
 

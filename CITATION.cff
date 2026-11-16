@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+title: "EasyTap Ride"
+message: "If you use or build upon EasyTap Ride, please cite it using the metadata below."
+type: software
+authors:
+  - family-names: "Bhargava K M"
+    given-names: "Anoop"
+license: MIT
+keywords:
+  - senior-friendly
+  - accessibility
+  - pwa
+  - assistive-technology
+  - ride-booking
+  - emergency-sos
+  - firebase
+  - react
+  - typescript
+version: "1.0.0"
+date-released: "2026-11-15"

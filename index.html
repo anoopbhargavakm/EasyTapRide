@@ -3,18 +3,57 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EasyTap Ride — Easy Rides, SOS &amp; Family Assist</title>
+    <title>EasyTap Ride – Senior-Friendly One-Tap Ride Booking</title>
     <meta
       name="description"
-      content="Senior-friendly minimal-click ride booking with one-tap Emergency SOS, calibrated GPS, Voice booking, and Family Assist via Gmail."
+      content="Book autos and cabs in one tap or by voice with EasyTap Ride. Includes Emergency SOS, calibrated GPS, and free Gmail family sharing."
     />
-    <meta property="og:title" content="EasyTap Ride — Easy Rides, SOS &amp; Family Assist" />
+    <meta
+      name="keywords"
+      content="senior ride booking, elder friendly cab app, one tap auto booking, emergency SOS GPS, accessible PWA, family assist, Uber, Ola, Rapido, Namma Yatri"
+    />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="EasyTap Ride" />
+    <meta property="og:title" content="EasyTap Ride – Senior-Friendly One-Tap Ride Booking" />
     <meta
       property="og:description"
-      content="Senior-friendly minimal-click ride booking with one-tap Emergency SOS, calibrated GPS, Voice booking, and Family Assist via Gmail."
+      content="Book autos and cabs in one tap or by voice with EasyTap Ride. Includes Emergency SOS, calibrated GPS, and free Gmail family sharing."
     />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
+    <meta property="og:image" content="/pwa-512x512.png" />
+    <meta property="og:image:alt" content="EasyTap Ride app icon" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="EasyTap Ride – Senior-Friendly One-Tap Ride Booking" />
+    <meta
+      name="twitter:description"
+      content="Book autos and cabs in one tap or by voice with EasyTap Ride. Includes Emergency SOS, calibrated GPS, and free Gmail family sharing."
+    />
+    <meta name="twitter:image" content="/pwa-512x512.png" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "EasyTap Ride",
+        "applicationCategory": "TravelApplication",
+        "operatingSystem": "All",
+        "browserRequirements": "Requires JavaScript",
+        "description": "Book autos and cabs in one tap or by voice with EasyTap Ride. Includes Emergency SOS, calibrated GPS, and free Gmail family sharing.",
+        "license": "https://opensource.org/licenses/MIT",
+        "featureList": [
+          "One-tap destination booking for Auto and Cab",
+          "Voice-activated ride search and launch",
+          "Multi-sample calibrated GPS pickup",
+          "One-tap Emergency SOS via Call, SMS, and WhatsApp",
+          "Remote Family Assist sharing via Google Sign-In",
+          "Offline-ready installable PWA"
+        ],
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -28,6 +67,19 @@
     <meta name="apple-mobile-web-app-title" content="EasyTap" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <script>
+      (function () {
+        var canonicalUrl = window.location.origin + window.location.pathname;
+        var link = document.createElement('link');
+        link.setAttribute('rel', 'canonical');
+        link.setAttribute('href', canonicalUrl);
+        document.head.appendChild(link);
+        var ogUrl = document.createElement('meta');
+        ogUrl.setAttribute('property', 'og:url');
+        ogUrl.setAttribute('content', canonicalUrl);
+        document.head.appendChild(ogUrl);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

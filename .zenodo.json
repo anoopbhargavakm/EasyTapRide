@@ -1,0 +1,24 @@
+{
+  "title": "EasyTap Ride: Senior-Friendly One-Tap Ride Booking & Family Assist PWA",
+  "description": "An open-source, zero-cost Progressive Web App enabling senior citizens to book autos and cabs in one tap or by voice, share live GPS Emergency SOS alerts, and receive remote place-management help from family via Gmail and Firebase Firestore.",
+  "upload_type": "software",
+  "access_right": "open",
+  "license": "MIT",
+  "creators": [
+    {
+      "name": "Bhargava K M, Anoop"
+    }
+  ],
+  "keywords": [
+    "senior-friendly",
+    "accessibility",
+    "progressive-web-app",
+    "assistive-technology",
+    "ride-booking",
+    "emergency-sos",
+    "open-location-code",
+    "firebase-firestore",
+    "react",
+    "open-source"
+  ]
+}
